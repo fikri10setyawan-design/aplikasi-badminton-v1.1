@@ -1,7 +1,21 @@
 import streamlit as st
 import pandas as pd
-import os
 from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# --- KONEKSI KE GOOGLE SHEETS ---
+# Kita siapkan izin akses
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+# Baca kunci rahasia (pastikan file json ada di folder yang sama)
+creds = ServiceAccountCredentials.from_json_keyfile_name("kunci_rahasia.json", scope)
+client = gspread.authorize(creds)
+
+# Buka file spreadsheet kita
+# Pastikan nama di dalam kurung SAMA PERSIS dengan nama file di Google Drive
+sheet = client.open("TES").sheet1
+st.write("📍 Robot menulis ke sini:", sheet.spreadsheet.url)
 
 # --- SISTEM LOGIN ---
 # 1. Siapkan "Ingatan" untuk menyimpan status login
@@ -58,30 +72,21 @@ if not st.session_state['sudah_login']:
     login_form()
     st.stop()  # ⛔ BERHENTI DI SINI kalau belum login!
 
-# Pastikan nama file ini SAMA PERSIS dengan file Excel yang kamu bikin tadi
-FILE_EXCEL = 'data_badminton.xlsx'
 
 # --- FUNGSI 1: BACA GUDANG DATA ---
 def load_data():
-    """Membuka file Excel dan mengubahnya jadi DataFrame (Tabel Python)"""
-    if os.path.exists(FILE_EXCEL):
-        try:
-            return pd.read_excel(FILE_EXCEL)
-        except Exception as e:
-            st.error(f"Gagal membaca file: {e}")
-            return None
-    else:
-        # Jaga-jaga kalau filenya hilang, kita bikin tabel kosongan
-        return pd.DataFrame(columns=['Tanggal', 'Jenis', 'Kategori', 'Nominal', 'Keterangan'])
+    # Tarik semua data dari Google Sheet
+    data = sheet.get_all_records()
+    
+    # Ubah jadi tabel rapi (DataFrame)
+    df = pd.DataFrame(data)
+    
+    # Sedikit trik: Kalau datanya kosong, kita buat kerangka kosong biar nggak error
+    if df.empty:
+        return pd.DataFrame(columns=["Tanggal", "Member", "Jenis", "Kategori", "Nominal", "Keterangan"])
+        
+    return df
 
-# --- FUNGSI 2: TULIS KE GUDANG DATA ---
-def simpan_data(df):
-    """Menyimpan tabel Python kembali ke file Excel"""
-    try:
-        df.to_excel(FILE_EXCEL, index=False)
-    except Exception as e:
-        st.error(f"Gagal menyimpan data: {e}")
-        # --- 3. MEMBUAT TAMPILAN (INTERFACE) ---
 st.title("🏸 Aplikasi Kas Badminton")
 st.write("Catat pemasukan dan pengeluaran dengan mudah.")
 
@@ -155,27 +160,23 @@ if menu == "Input Data":
         tombol_simpan = st.button("Simpan Data")
 
         if tombol_simpan:
-            # 1. Siapkan data baru
-            data_baru = pd.DataFrame([{
-                'Tanggal': tanggal,
-                'Jenis': jenis,
-                'Kategori': kategori,
-                'Nominal': nominal,
-                'Keterangan': ket
-            }])
-
-            # 2. Gabungkan (Concatenate)
-            df_update = pd.concat([df, data_baru], ignore_index=True)
-
-            # 3. Simpan ke Excel
-            simpan_data(df_update)
+            # --- LOGIKA BARU: KIRIM KE GOOGLE SHEETS ---
             
-            st.success("✅ Data berhasil disimpan!")
+            # 1. Ubah Tanggal jadi Teks (biar Google gak bingung)
+            tanggal_str = str(tanggal)
 
-            # Angkat bendera untuk putaran berikutnya
+            # 2. Susun data dalam satu baris (Urutan harus sama dengan kolom di Google Sheet!)
+            baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
+
+            # 3. Kirim ke Awan ☁️
+            sheet.append_row(baris_baru)
+            
+            st.success("✅ Berhasil simpan ke Google Drive!")
+            
+            # 4. Angkat bendera untuk bersih-bersih form
             st.session_state['bersihkan_form'] = True
-        
-             # Refresh halaman supaya logika di atas jalan
+            
+            # 5. Refresh
             st.rerun()
 
             # === MENU 2: LAPORAN KAS ===
@@ -222,10 +223,7 @@ elif menu == "Hapus Data":
             try:
                 # Proses Hapus baris
                 df = df.drop(nomor_hapus)
-                
-                # Simpan perubahan ke Excel
-                simpan_data(df)
-                
+    
                 st.success(f"✅ Data baris ke-{nomor_hapus} berhasil dihapus!")
                 
                 # Paksa refresh halaman biar tabelnya update
