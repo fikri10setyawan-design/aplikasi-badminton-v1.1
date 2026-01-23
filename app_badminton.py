@@ -3,17 +3,20 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import json  # <--- Tamu baru yang penting!
 
-# --- KONEKSI KE GOOGLE SHEETS ---
-# Kita siapkan izin akses
+# --- KONEKSI KE GOOGLE SHEETS (VERSI CLOUD) ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-# Baca kunci rahasia (pastikan file json ada di folder yang sama)
-creds = ServiceAccountCredentials.from_json_keyfile_name("kunci_rahasia.json", scope)
+# Kita ambil kunci dari "Brankas" Secrets
+# (Pastikan nama "gcp_json" sama dengan yang kamu tulis di Settings tadi)
+json_key = json.loads(st.secrets["gcp_json"])
+
+creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
 
-# Buka file spreadsheet kita
-# Pastikan nama di dalam kurung SAMA PERSIS dengan nama file di Google Drive
+# Buka file spreadsheet
+# Pastikan nama ini SESUAI dengan nama file di Google Drive kamu (misal: "TES")
 sheet = client.open("TES").sheet1
 st.write("📍 Robot menulis ke sini:", sheet.spreadsheet.url)
 
