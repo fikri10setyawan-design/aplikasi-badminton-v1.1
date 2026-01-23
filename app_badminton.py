@@ -15,7 +15,6 @@ try:
     client = gspread.authorize(creds)
     sheet = client.open("TES").sheet1  # <-- Ganti "TES" dengan nama sheet kamu kalau beda
     
-    st.success("✅ Koneksi Berhasil! Robot sudah masuk.")
 
 except Exception as e:
     st.error(f"❌ Masih Error: {e}")
@@ -241,5 +240,6 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
