@@ -1,15 +1,5 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-import json  # <--- Tamu baru yang penting!
-
-# --- KONEKSI KE GOOGLE SHEETS (VERSI CLOUD) ---
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
-import streamlit as st
-import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 # --- KONEKSI VERSI BARU (NATIVE TOML) ---
@@ -251,5 +241,3 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
-
-
