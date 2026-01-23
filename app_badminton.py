@@ -24,7 +24,6 @@ except Exception as e:
 # Buka file spreadsheet
 # Pastikan nama ini SESUAI dengan nama file di Google Drive kamu (misal: "TES")
 sheet = client.open("TES").sheet1
-st.write("📍 Robot menulis ke sini:", sheet.spreadsheet.url)
 
 # --- SISTEM LOGIN ---
 # 1. Siapkan "Ingatan" untuk menyimpan status login
@@ -242,4 +241,5 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
