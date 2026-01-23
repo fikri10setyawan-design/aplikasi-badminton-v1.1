@@ -12,33 +12,23 @@ import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import json
-
-# --- KODE DETEKTIF UNTUK CEK SECRETS ---
+# --- KONEKSI VERSI BARU (NATIVE TOML) ---
+# Pastikan section di Secrets kamu namanya [gcp_service_account]
 try:
-    # Kita coba baca pelan-pelan
-    raw_text = st.secrets["gcp_json"]
-    json_key = json.loads(raw_text)
-    st.success("✅ HORE! Format JSON sudah benar!")
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    
+    # Perbedaan utamanya di sini: Tidak perlu json.loads()
+    # Kita langsung panggil nama "table" yang ada di Secrets
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    
+    client = gspread.authorize(creds)
+    sheet = client.open("TES").sheet1  # <-- Ganti "TES" dengan nama sheet kamu kalau beda
+    
+    st.success("✅ Koneksi Berhasil! Robot sudah masuk.")
 
-except json.JSONDecodeError as e:
-    # Kalau salah, kita bongkar detailnya
-    st.error(f"❌ Masih Salah Format di Baris {e.lineno}, Kolom {e.colno}")
-    st.write("Masalahnya ada di sekitar teks ini:")
-    
-    # Ambil potongan teks yang bikin error (10 huruf sebelum & sesudah)
-    start_point = max(0, e.pos - 20)
-    end_point = min(len(raw_text), e.pos + 20)
-    potongan_error = raw_text[start_point:end_point]
-    
-    # Tampilkan di layar biar kelihatan 'Enter' gaib-nya
-    st.code(potongan_error)
-    
-    st.warning("Perhatikan teks di atas. Apakah ada spasi aneh atau baris yang putus?")
-    st.stop() # Berhenti dulu biar gak lanjut error ke bawah
-
-creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
-client = gspread.authorize(creds)
+except Exception as e:
+    st.error(f"❌ Masih Error: {e}")
+    st.stop()
 
 # Buka file spreadsheet
 # Pastikan nama ini SESUAI dengan nama file di Google Drive kamu (misal: "TES")
@@ -261,4 +251,5 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
