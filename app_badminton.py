@@ -8,9 +8,34 @@ import json  # <--- Tamu baru yang penting!
 # --- KONEKSI KE GOOGLE SHEETS (VERSI CLOUD) ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-# Kita ambil kunci dari "Brankas" Secrets
-# (Pastikan nama "gcp_json" sama dengan yang kamu tulis di Settings tadi)
-json_key = json.loads(st.secrets["gcp_json"])
+import streamlit as st
+import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import json
+
+# --- KODE DETEKTIF UNTUK CEK SECRETS ---
+try:
+    # Kita coba baca pelan-pelan
+    raw_text = st.secrets["gcp_json"]
+    json_key = json.loads(raw_text)
+    st.success("✅ HORE! Format JSON sudah benar!")
+
+except json.JSONDecodeError as e:
+    # Kalau salah, kita bongkar detailnya
+    st.error(f"❌ Masih Salah Format di Baris {e.lineno}, Kolom {e.colno}")
+    st.write("Masalahnya ada di sekitar teks ini:")
+    
+    # Ambil potongan teks yang bikin error (10 huruf sebelum & sesudah)
+    start_point = max(0, e.pos - 20)
+    end_point = min(len(raw_text), e.pos + 20)
+    potongan_error = raw_text[start_point:end_point]
+    
+    # Tampilkan di layar biar kelihatan 'Enter' gaib-nya
+    st.code(potongan_error)
+    
+    st.warning("Perhatikan teks di atas. Apakah ada spasi aneh atau baris yang putus?")
+    st.stop() # Berhenti dulu biar gak lanjut error ke bawah
 
 creds = ServiceAccountCredentials.from_json_keyfile_dict(json_key, scope)
 client = gspread.authorize(creds)
@@ -236,3 +261,4 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
