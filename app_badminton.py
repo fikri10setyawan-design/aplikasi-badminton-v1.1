@@ -218,7 +218,7 @@ elif menu == "Hapus Data":
     st.write("Lihat nomor (angka paling kiri) baris yang ingin dihapus:")
     st.dataframe(df)
     
-    # 3. Logika Hapus
+   # 3. Logika Hapus
     if not df.empty:
         # Pilihan nomor index
         nomor_hapus = st.selectbox("Pilih Nomor Baris (Index) yang mau dihapus:", df.index)
@@ -226,16 +226,24 @@ elif menu == "Hapus Data":
         # Tombol Eksekusi
         if st.button("🗑️ Hapus Permanen"):
             try:
-                # Proses Hapus baris
-                df = df.drop(nomor_hapus)
-    
-                st.success(f"✅ Data baris ke-{nomor_hapus} berhasil dihapus!")
+                # --- PERBAIKAN DI SINI ---
+                # Rumus: Index + 2 (Karena index mulai dari 0, dan Baris 1 di sheet adalah Judul)
+                baris_di_sheet = int(nomor_hapus) + 2
                 
-                # Paksa refresh halaman biar tabelnya update
+                # Perintah langsung ke Google Sheet
+                sheet.delete_rows(baris_di_sheet)
+                # -------------------------
+
+                st.success(f"✅ Data baris ke-{nomor_hapus} (Baris Sheet {baris_di_sheet}) berhasil dihapus permanen!")
+                
+                # Kita kasih jeda dikit biar pesan suksesnya sempat kebaca sebelum refresh
+                import time
+                time.sleep(1)
+                
+                # Refresh halaman biar tabelnya update dari sumber aslinya
                 st.rerun()
                 
             except Exception as e:
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
-
