@@ -202,7 +202,7 @@ elif menu == "Laporan Kas":
             judul_absen = "Total Kunjungan Member"
         else:
             df_tampil = df[df['Tanggal'] == pilih_periode]
-            judul_ket = f"Sisa Kas {pilih_periode}"
+            judul_ket = f"Sisa Kas ({pilih_periode})"
             judul_absen = f"Member Hadir ({pilih_periode})"
     
         # --- RUMUS 'COUNTIF' VERSI PYTHON ---
@@ -281,6 +281,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
