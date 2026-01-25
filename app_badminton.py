@@ -193,7 +193,7 @@ elif menu == "Laporan Kas":
     df['Tanggal'] = pd.to_datetime(df['Tanggal']).dt.date
     
     # 2. Tampilkan Tabel
-    st.dataframe(df)
+    st.dataframe(df, height=600, use_container_width=True)
     
     # 3. Hitung Ringkasan (Opsional)
     if not df.empty:
@@ -247,3 +247,4 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
