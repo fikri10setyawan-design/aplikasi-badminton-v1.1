@@ -95,9 +95,6 @@ def load_data():
 st.title("🏸 Aplikasi Kas Badminton")
 st.write("Catat pemasukan dan pengeluaran dengan mudah.")
 
-# Muat data yang ada di Excel sekarang
-df = load_data()
-
 # Menu Navigasi di Sidebar (Kiri)
 
 # --- LOGIKA MENU DINAMIS ---
@@ -283,6 +280,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
