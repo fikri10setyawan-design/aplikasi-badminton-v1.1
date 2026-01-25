@@ -22,10 +22,6 @@ except Exception as e:
     st.error(f"❌ Gagal Konek: {e}")
     st.stop()
 
-# Buka file spreadsheet
-# Pastikan nama ini SESUAI dengan nama file di Google Drive kamu (misal: "TES")
-sheet = client.open("TES").sheet1
-
 # --- SISTEM LOGIN ---
 # 1. Siapkan "Ingatan" untuk menyimpan status login
 if 'sudah_login' not in st.session_state:
@@ -242,3 +238,4 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
