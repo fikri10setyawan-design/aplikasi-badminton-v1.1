@@ -253,12 +253,12 @@ elif menu == "Laporan Kas":
     
     # ... (Tombol download di bawahnya tetap sama) ...
         # Fitur Download
-        csv = df_tampil.to_csv(index=False).encode('utf-8')
-        st.download_button(
-            label="📥 Download Laporan",
-            data=csv,
-            file_name=f'Laporan_{pilih_periode}.csv',
-            mime='text/csv')
+    csv = df_tampil.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Laporan",
+        data=csv,
+        file_name=f'Laporan_{pilih_periode}.csv',
+        mime='text/csv')
     
     else:
         st.info("Belum ada data laporan.")
@@ -303,6 +303,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
