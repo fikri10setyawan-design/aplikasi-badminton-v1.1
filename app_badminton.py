@@ -3,21 +3,23 @@ import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
-# --- KONEKSI VERSI BARU (NATIVE TOML) ---
-# Pastikan section di Secrets kamu namanya [gcp_service_account]
-try:
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    
-    # Perbedaan utamanya di sini: Tidak perlu json.loads()
-    # Kita langsung panggil nama "table" yang ada di Secrets
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-    
-    client = gspread.authorize(creds)
-    sheet = client.open("TES").sheet1  # <-- Ganti "TES" dengan nama sheet kamu kalau beda
-    
 
+# --- KONEKSI DENGAN CACHE (ANTI ERROR 429) ---
+# Fungsi ini dibungkus cache biar ngga bolak-balik login ke Google
+@st.cache_resource
+def connect_to_google_sheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    # Panggil Secrets
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+    # Buka Sheet (Pastikan nama sheet "TES" sesuai)
+    return client.open("TES").sheet1
+
+# --- MEMANGGIL KONEKSI ---
+try:
+    sheet = connect_to_google_sheet()
 except Exception as e:
-    st.error(f"❌ Masih Error: {e}")
+    st.error(f"❌ Gagal Konek: {e}")
     st.stop()
 
 # Buka file spreadsheet
@@ -240,6 +242,3 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
-
-
-
