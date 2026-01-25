@@ -186,26 +186,57 @@ if menu == "Input Data":
 
             # === MENU 2: LAPORAN KAS ===
 elif menu == "Laporan Kas":
-    st.header("Laporan Keuangan")
+    # --- LOGIKA FILTER TANGGAL (UPDATE BARU) ---
+st.markdown("---")
+st.header("📊 Laporan Keuangan")
+
+if not df.empty:
+    # 1. Ambil daftar tanggal unik yang ada di data
+    # Kita urutkan reverse=True supaya tanggal terbaru muncul paling atas
+    daftar_tanggal = sorted(df['Tanggal'].unique().tolist(), reverse=True)
     
-    # 1. BACA ULANG DATA (Penting biar data baru muncul!)
-    df = load_data()
-    df['Tanggal'] = pd.to_datetime(df['Tanggal']).dt.date
+    # 2. Tambahkan opsi 'Tampilkan Semua'
+    opsi_pilihan = ["Semua Waktu"] + daftar_tanggal
     
-    # 2. Tampilkan Tabel
-    st.dataframe(df, height=600, use_container_width=True)
+    # 3. Buat Widget Pilihan (Dropdown)
+    # Ini fungsinya seperti "Tombol Akses Laporan Lampau"
+    pilih_periode = st.selectbox("📅 Pilih Periode Laporan:", opsi_pilihan)
     
-    # 3. Hitung Ringkasan (Opsional)
-    if not df.empty:
-        st.write("---")
-        total_masuk = df[df['Jenis'] == 'Pemasukan']['Nominal'].sum()
-        total_keluar = df[df['Jenis'] == 'Pengeluaran']['Nominal'].sum()
-        sisa = total_masuk - total_keluar
-        
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Pemasukan", f"Rp {total_masuk:,.0f}")
-        col2.metric("Pengeluaran", f"Rp {total_keluar:,.0f}")
-        col3.metric("Sisa Kas", f"Rp {sisa:,.0f}")
+    # 4. Filter Data Berdasarkan Pilihan
+    if pilih_periode == "Semua Waktu":
+        df_tampil = df  # Pakai semua data
+        judul_ket = "Total Saldo Kas (Akumulasi)"
+    else:
+        df_tampil = df[df['Tanggal'] == pilih_periode] # Cuma ambil data tanggal itu
+        judul_ket = f"Saldo Kas Sesi {pilih_periode}"
+
+    # --- TAMPILKAN METRIK (PAPAN SKOR) ---
+    # Kita hitung ulang berdasarkan data yang DIPILIH saja (df_tampil)
+    total_masuk = df_tampil[df_tampil['Jenis'] == 'Pemasukan']['Nominal'].sum()
+    total_keluar = df_tampil[df_tampil['Jenis'] == 'Pengeluaran']['Nominal'].sum()
+    sisa_kas = total_masuk - total_keluar
+    
+    # Tampilkan kotak skor
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Pemasukan", f"Rp {total_masuk:,}")
+    col2.metric("Pengeluaran", f"Rp {total_keluar:,}")
+    col3.metric(judul_ket, f"Rp {sisa_kas:,}")
+
+    # --- TAMPILKAN TABEL ---
+    st.write(f"**Rincian Transaksi ({pilih_periode}):**")
+    st.dataframe(df_tampil, height=600, use_container_width=True)
+    
+    # Tombol Download (Bonus Level 2 tadi!)
+    # Kita ubah data jadi CSV biar bisa didownload
+    csv = df_tampil.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Laporan ini (Excel/CSV)",
+        data=csv,
+        file_name=f'Laporan_Badminton_{pilih_periode}.csv',
+        mime='text/csv',)
+
+else:
+    st.info("Belum ada data laporan.")
         # === MENU 3: HAPUS DATA ===
 elif menu == "Hapus Data":
     st.header("Hapus Data Transaksi")
@@ -247,4 +278,5 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
