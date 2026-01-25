@@ -187,53 +187,58 @@ if menu == "Input Data":
             # === MENU 2: LAPORAN KAS ===
 elif menu == "Laporan Kas":
     # --- LOGIKA FILTER TANGGAL (UPDATE BARU) ---
+    # --- LOGIKA LAPORAN & HITUNG MEMBER (UPDATE) ---
     st.markdown("---")
-    st.header("📊 Laporan Keuangan")
+    st.header("📊 Laporan Keuangan & Absensi")
     
     if not df.empty:
-        # 1. Ambil daftar tanggal unik yang ada di data
-        # Kita urutkan reverse=True supaya tanggal terbaru muncul paling atas
+        # 1. Filter Tanggal (Sama kayak tadi)
         daftar_tanggal = sorted(df['Tanggal'].unique().tolist(), reverse=True)
-        
-        # 2. Tambahkan opsi 'Tampilkan Semua'
         opsi_pilihan = ["Semua Waktu"] + daftar_tanggal
-        
-        # 3. Buat Widget Pilihan (Dropdown)
-        # Ini fungsinya seperti "Tombol Akses Laporan Lampau"
         pilih_periode = st.selectbox("📅 Pilih Periode Laporan:", opsi_pilihan)
         
-        # 4. Filter Data Berdasarkan Pilihan
+        # 2. Filter Data
         if pilih_periode == "Semua Waktu":
-            df_tampil = df  # Pakai semua data
-            judul_ket = "Total Saldo Kas (Akumulasi)"
+            df_tampil = df
+            judul_ket = "Sisa Kas (Total)"
+            judul_absen = "Total Kunjungan Member"
         else:
-            df_tampil = df[df['Tanggal'] == pilih_periode] # Cuma ambil data tanggal itu
-            judul_ket = f"Saldo Kas Sesi {pilih_periode}"
+            df_tampil = df[df['Tanggal'] == pilih_periode]
+            judul_ket = f"Sisa Kas {pilih_periode}"
+            judul_absen = f"Member Hadir ({pilih_periode})"
     
-        # --- TAMPILKAN METRIK (PAPAN SKOR) ---
-        # Kita hitung ulang berdasarkan data yang DIPILIH saja (df_tampil)
+        # --- RUMUS 'COUNTIF' VERSI PYTHON ---
+        # Kita filter cuma yang nominalnya 20000
+        # Angka 20000 ini harus tipe Angka (Integer), bukan teks.
+        df_member = df_tampil[df_tampil['Nominal'] == 20000]
+        jumlah_member = len(df_member) # Ini sama dengan =COUNTIF
+    
+        # Hitung Duit
         total_masuk = df_tampil[df_tampil['Jenis'] == 'Pemasukan']['Nominal'].sum()
         total_keluar = df_tampil[df_tampil['Jenis'] == 'Pengeluaran']['Nominal'].sum()
         sisa_kas = total_masuk - total_keluar
         
-        # Tampilkan kotak skor
-        col1, col2, col3 = st.columns(3)
+        # --- TAMPILKAN 4 KARTU SKOR ---
+        col1, col2, col3, col4 = st.columns(4)
+        
         col1.metric("Pemasukan", f"Rp {total_masuk:,}")
         col2.metric("Pengeluaran", f"Rp {total_keluar:,}")
         col3.metric(judul_ket, f"Rp {sisa_kas:,}")
+        
+        # KARTU BARU: JUMLAH MEMBER
+        col4.metric(judul_absen, f"{jumlah_member} Orang")
     
         # --- TAMPILKAN TABEL ---
-        st.write(f"**Rincian Transaksi ({pilih_periode}):**")
+        st.write(f"**Rincian Transaksi:**")
         st.dataframe(df_tampil, height=600, use_container_width=True)
         
-        # Tombol Download (Bonus Level 2 tadi!)
-        # Kita ubah data jadi CSV biar bisa didownload
+        # Fitur Download
         csv = df_tampil.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="📥 Download Laporan ini (Excel/CSV)",
+            label="📥 Download Laporan",
             data=csv,
-            file_name=f'Laporan_Badminton_{pilih_periode}.csv',
-            mime='text/csv',)
+            file_name=f'Laporan_{pilih_periode}.csv',
+            mime='text/csv')
     
     else:
         st.info("Belum ada data laporan.")
@@ -278,6 +283,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
