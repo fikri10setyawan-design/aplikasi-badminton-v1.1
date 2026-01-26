@@ -104,7 +104,7 @@ if st.session_state['user_role'] == "Admin":
     opsi_menu = ["Input Data", "Laporan Kas", "Hapus Data"]
 else:
     # Kalau Member, menu "Hapus Data" dihilangkan
-    opsi_menu = ["Input Data", "Laporan Kas"]
+    opsi_menu = ["Laporan Kas"]
 
 # Masukkan opsi_menu ke dalam selectbox
 menu = st.sidebar.selectbox("Pilih Menu", opsi_menu)
@@ -299,6 +299,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
