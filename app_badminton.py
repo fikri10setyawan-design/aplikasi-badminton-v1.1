@@ -262,8 +262,8 @@ elif menu == "Laporan Kas":
         mime='text/csv',
     )
     
-else:
-    st.info("Belum ada data laporan.")
+    else:
+        st.info("Belum ada data laporan.")
         # === MENU 3: HAPUS DATA ===
 elif menu == "Hapus Data":
     st.header("Hapus Data Transaksi")
@@ -305,6 +305,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
