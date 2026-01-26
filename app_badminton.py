@@ -190,7 +190,7 @@ elif menu == "Laporan Kas":
     st.header("📊 Laporan Keuangan & Absensi")
     
     if not df.empty:
-        # 1. Filter Tanggal (Sama kayak tadi)
+        # 1. Filter Tanggal
         daftar_tanggal = sorted(df['Tanggal'].unique().tolist(), reverse=True)
         opsi_pilihan = ["Semua Waktu"] + daftar_tanggal
         pilih_periode = st.selectbox("📅 Pilih Periode Laporan:", opsi_pilihan)
@@ -206,64 +206,58 @@ elif menu == "Laporan Kas":
             judul_absen = f"Member Hadir ({pilih_periode})"
     
         # --- RUMUS 'COUNTIF' VERSI PYTHON ---
-        # Kita filter cuma yang nominalnya 20000
-        # Angka 20000 ini harus tipe Angka (Integer), bukan teks.
         df_member = df_tampil[df_tampil['Nominal'] == 20000]
-        jumlah_member = len(df_member) # Ini sama dengan =COUNTIF
+        jumlah_member = len(df_member)
     
         # Hitung Duit
         total_masuk = df_tampil[df_tampil['Jenis'] == 'Pemasukan']['Nominal'].sum()
         total_keluar = df_tampil[df_tampil['Jenis'] == 'Pengeluaran']['Nominal'].sum()
         sisa_kas = total_masuk - total_keluar
         
-        # ... (Bagian atas kode laporan keuangan masih sama) ...
+        # --- LOGIKA WARNA TEKS (Pengeluaran = Merah) ---
+        # (Perhatikan: def ini sekarang menjorok ke dalam, sejajar dengan filter di atas)
+        def warna_teks_saja(row):
+            if row['Jenis'] == 'Pengeluaran':
+                return ['color: #D32F2F'] * len(row) 
+            else:
+                return [''] * len(row)
 
-    # --- LOGIKA WARNA TEKS (Pengeluaran = Merah) ---
-    def warna_teks_saja(row):
-        # Jika Jenis-nya Pengeluaran, teks jadi merah (red)
-        if row['Jenis'] == 'Pengeluaran':
-            return ['color: #D32F2F'] * len(row) # Merah agak gelap biar enak dibaca
-        # Sisanya hitam standar
+        # Terapkan warnanya
+        df_berwarna = df_tampil.style.apply(warna_teks_saja, axis=1)
+
+        # --- TAMPILKAN 4 KARTU SKOR ---
+        col1, col2, col3, col4 = st.columns(4)
+        
+        col1.metric("Pemasukan", f"Rp {total_masuk:,}")
+        col2.metric("Pengeluaran", f"Rp {total_keluar:,}")
+        
+        # Logika Minus Merah
+        if sisa_kas < 0:
+            col3.markdown(f"<p style='color:gray; margin-bottom:0;'>{judul_ket}</p>", unsafe_allow_html=True)
+            col3.markdown(f"<h2 style='color:red; margin-top:0;'>Rp {sisa_kas:,}</h2>", unsafe_allow_html=True)
         else:
-            return [''] * len(row)
+            col3.metric(judul_ket, f"Rp {sisa_kas:,}")
+        
+        col4.metric(judul_absen, f"{jumlah_member} Orang")
 
-    # Terapkan warnanya
-    df_berwarna = df_tampil.style.apply(warna_teks_saja, axis=1)
-
-    # --- TAMPILKAN 4 KARTU SKOR (DENGAN LOGIKA MINUS MERAH) ---
-    col1, col2, col3, col4 = st.columns(4)
-    
-    col1.metric("Pemasukan", f"Rp {total_masuk:,}")
-    col2.metric("Pengeluaran", f"Rp {total_keluar:,}")
-    
-    # LOGIKA KHUSUS SISA KAS
-    # Jika minus, kita pakai Markdown biar bisa diwarnai Merah
-    if sisa_kas < 0:
-        col3.markdown(f"<p style='color:gray; margin-bottom:0;'>{judul_ket}</p>", unsafe_allow_html=True)
-        col3.markdown(f"<h2 style='color:red; margin-top:0;'>Rp {sisa_kas:,}</h2>", unsafe_allow_html=True)
-    else:
-        # Jika positif (aman), pakai tampilan standar
-        col3.metric(judul_ket, f"Rp {sisa_kas:,}")
-    
-    col4.metric(judul_absen, f"{jumlah_member} Orang")
-
-    # --- TAMPILKAN TABEL ---
-    st.write(f"**Rincian Transaksi ({pilih_periode}):**")
-    st.dataframe(df_berwarna, height=600, use_container_width=True)
-    
-    # ... (Tombol download di bawahnya tetap sama) ...
+        # --- TAMPILKAN TABEL ---
+        st.write(f"**Rincian Transaksi ({pilih_periode}):**")
+        st.dataframe(df_berwarna, height=600, use_container_width=True)
+        
         # Fitur Download
-    csv = df_tampil.to_csv(index=False).encode('utf-8')
-    
-    st.download_button(
-        label="📥 Download Laporan",
-        data=csv,
-        file_name=f'Laporan_{pilih_periode}.csv',
-        mime='text/csv',
-    )
+        csv = df_tampil.to_csv(index=False).encode('utf-8')
+        
+        st.download_button(
+            label="📥 Download Laporan",
+            data=csv,
+            file_name=f'Laporan_{pilih_periode}.csv',
+            mime='text/csv',
+        )
     
     else:
+        # Else ini sejajar dengan if not df.empty di atas
         st.info("Belum ada data laporan.")
+
         # === MENU 3: HAPUS DATA ===
 elif menu == "Hapus Data":
     st.header("Hapus Data Transaksi")
@@ -305,6 +299,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
