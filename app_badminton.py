@@ -93,8 +93,8 @@ def load_data():
     return df
 
 st.title("🏸 Catatan Keuangan Badminton")
-st.write("Input Pembayaran Kamu Disini 👇👇.")
 st.subheader("Bantu Admin Input data yaa 😊🙏")
+st.write("Input Pembayaran Kamu Disini 👇👇.")
 
 df = load_data()
 # Menu Navigasi di Sidebar (Kiri)
@@ -300,6 +300,7 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
+
 
 
 
