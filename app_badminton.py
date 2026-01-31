@@ -99,72 +99,82 @@ if menu == "Input Data":
 
     df = load_data()
 
-    # Bikin Formulir dengan st.form
-    with st.form("form_input", clear_on_submit=True):
-        col1, col2 = st.columns(2) # Bagi layar jadi 2 kolom
+    # Bikin Formulir (TANPA st.form agar interaktif)
+    # with st.form("form_input", clear_on_submit=True): <--- HAPUS
+    
+    col1, col2 = st.columns(2) # Bagi layar jadi 2 kolom
+    
+    with col1:
+        tanggal = st.date_input("Tanggal", datetime.now())
+        # Hapus on_change karena tidak jalan di dalam form sebelum submit
+        member = st.text_input("Nama Member (Khusus Pemasukan)", key="input_member")
+    
+    with col2:
+        # 1. Pilih Jenis (Pemasukan/Pengeluaran)
+        # Pastikan logika ini dijalankan setiap kali render
+        current_role = st.session_state.get('user_role')
         
-        with col1:
-            tanggal = st.date_input("Tanggal", datetime.now())
-            # Hapus on_change karena tidak jalan di dalam form sebelum submit
-            member = st.text_input("Nama Member (Khusus Pemasukan)", key="input_member")
+        if current_role == "Admin":
+            opsi_jenis = ["Pemasukan", "Pengeluaran"]
+        else:
+            opsi_jenis = ["Pemasukan"]
+            
+        jenis = st.selectbox("Jenis", opsi_jenis, key="jenis_transaksi")
         
-        with col2:
-            # 1. Pilih Jenis (Pemasukan/Pengeluaran)
-            # Pastikan logika ini dijalankan setiap kali render
-            current_role = st.session_state.get('user_role')
-            st.write(f"DEBUG: Role di dalam form = '{current_role}'") # Debugging ON
-            
-            if current_role == "Admin":
-                opsi_jenis = ["Pemasukan", "Pengeluaran"]
-            else:
-                opsi_jenis = ["Pemasukan"]
-            
-            st.write(f"DEBUG: Opsi yang tersedia = {opsi_jenis}") # Debugging ON
-                
-            jenis = st.selectbox("Jenis", opsi_jenis, key="jenis_transaksi")
-            
-            # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
-            if jenis == "Pemasukan":
-                opsi_kategori = ["Iuran"]
-            else:
-                opsi_kategori = ["Lapangan", "Kock"]
-            
-            kategori = st.selectbox("Kategori", opsi_kategori)
+        # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
+        if jenis == "Pemasukan":
+            opsi_kategori = ["Iuran"]
+        else:
+            # Karena sudah tidak pakai st.form, blok ini akan jalan realtime saat jenis berubah!
+            opsi_kategori = ["Lapangan", "Kock"]
+        
+        kategori = st.selectbox("Kategori", opsi_kategori)
 
-            # 3. Input Nominal
-            if st.session_state['user_role'] == "Member":
-                angka_bawaan = 20000
-            else:
-                angka_bawaan = 0
+        # 3. Input Nominal
+        if st.session_state['user_role'] == "Member":
+            angka_bawaan = 20000
+        else:
+            angka_bawaan = 0
 
-            # nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, value=angka_bawaan, key="input_nominal")
-            # Note: value=angka_bawaan mungkin tidak reset sempurna dengan clear_on_submit jika statik, tapi kita coba standar.
-            nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, key="input_nominal")
-            
-            # ... (lanjut ke keterangan) ...
-            ket = st.text_area("Keterangan Tambahan", key="input_ket")
+        # nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, value=angka_bawaan, key="input_nominal")
+        # Note: value=angka_bawaan mungkin tidak reset sempurna dengan clear_on_submit jika statik, tapi kita coba standar.
+        nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, key="input_nominal")
+        
+        # ... (lanjut ke keterangan) ...
+        ket = st.text_area("Keterangan Tambahan", key="input_ket")
 
-        # Tombol Submit di dalam form
-        tombol_simpan = st.form_submit_button("Simpan Data")
+    # Tombol Submit (Biasa, bukan form_submit_button)
+    tombol_simpan = st.button("Simpan Data")
 
-        if tombol_simpan:
-            # --- LOGIKA BARU: Validasi & Auto-Fill ---
-            
-            # Auto-fill Keterangan jika kosong (pengganti on_change)
-            if not ket and member:
-                ket = member
+    if tombol_simpan:
+        # --- LOGIKA BARU: Validasi & Auto-Fill ---
+        
+        # Auto-fill Keterangan jika kosong (pengganti on_change)
+        if not ket and member:
+            ket = member
 
-            # 1. Ubah Tanggal jadi Teks
-            tanggal_str = str(tanggal)
+        # 1. Ubah Tanggal jadi Teks
+        tanggal_str = str(tanggal)
 
-            # 2. Susun data
-            baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
+        # 2. Susun data
+        baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
 
-            # 3. Kirim ke Awan ☁️
-            sheet.append_row(baris_baru)
-            
-            st.success("✅ Berhasil simpan ke Google Drive!")
-            # Tidak perlu st.rerun(), form otomatis clear karena clear_on_submit=True
+        # 3. Kirim ke Awan ☁️
+        sheet.append_row(baris_baru)
+        
+        st.success("✅ Berhasil simpan ke Google Drive!")
+        
+        # --- MANUAL RESET FORM ---
+        # Kita hapus state key-nya agar saat rerun kembali bersih
+        if 'input_member' in st.session_state: del st.session_state['input_member']
+        if 'input_nominal' in st.session_state: del st.session_state['input_nominal']
+        if 'input_ket' in st.session_state: del st.session_state['input_ket']
+        
+        # Jeda sedetik biar user liat pesan suksesnya
+        import time
+        time.sleep(1.0) 
+        
+        st.rerun()
 
             # === MENU 2: LAPORAN KAS ===
 elif menu == "Laporan Kas":
