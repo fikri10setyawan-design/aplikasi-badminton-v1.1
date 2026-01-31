@@ -111,12 +111,17 @@ if menu == "Input Data":
         with col2:
             # 1. Pilih Jenis (Pemasukan/Pengeluaran)
             # Pastikan logika ini dijalankan setiap kali render
-            if st.session_state.get('user_role') == "Admin":
+            current_role = st.session_state.get('user_role')
+            st.write(f"DEBUG: Role di dalam form = '{current_role}'") # Debugging ON
+            
+            if current_role == "Admin":
                 opsi_jenis = ["Pemasukan", "Pengeluaran"]
             else:
                 opsi_jenis = ["Pemasukan"]
+            
+            st.write(f"DEBUG: Opsi yang tersedia = {opsi_jenis}") # Debugging ON
                 
-            jenis = st.selectbox("Jenis", opsi_jenis)
+            jenis = st.selectbox("Jenis", opsi_jenis, key="jenis_transaksi")
             
             # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
             if jenis == "Pemasukan":
