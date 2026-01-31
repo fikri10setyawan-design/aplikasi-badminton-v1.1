@@ -81,6 +81,8 @@ df = load_data()
 # Menu Navigasi di Sidebar (Kiri)
 
 # --- LOGIKA MENU DINAMIS ---
+st.sidebar.markdown(f"Login sebagai: **{st.session_state['user_role']}**") # Indikator Status
+
 if st.session_state['user_role'] == "Admin":
     # Kalau Admin, menunya lengkap
     opsi_menu = ["Input Data", "Laporan Kas", "Hapus Data"]
@@ -108,7 +110,8 @@ if menu == "Input Data":
         
         with col2:
             # 1. Pilih Jenis (Pemasukan/Pengeluaran)
-            if st.session_state['user_role'] == "Admin":
+            # Pastikan logika ini dijalankan setiap kali render
+            if st.session_state.get('user_role') == "Admin":
                 opsi_jenis = ["Pemasukan", "Pengeluaran"]
             else:
                 opsi_jenis = ["Pemasukan"]
@@ -297,26 +300,3 @@ elif menu == "Hapus Data":
                 st.error(f"Gagal menghapus: {e}")
     else:
         st.info("Belum ada data yang bisa dihapus.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
