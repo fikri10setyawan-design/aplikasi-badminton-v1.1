@@ -165,10 +165,15 @@ if menu == "Input Data":
         st.success("✅ Berhasil simpan ke Google Drive!")
         
         # --- MANUAL RESET FORM ---
-        # Kita hapus state key-nya agar saat rerun kembali bersih
-        if 'input_member' in st.session_state: del st.session_state['input_member']
-        if 'input_nominal' in st.session_state: del st.session_state['input_nominal']
-        if 'input_ket' in st.session_state: del st.session_state['input_ket']
+        # Kita set nilai state secara eksplisit agar widget ter-reset
+        st.session_state['input_member'] = ""
+        st.session_state['input_ket'] = ""
+        
+        # Reset nominal kembali ke default (Misal: Member 20.000, Admin 0)
+        if st.session_state.get('user_role') == "Member":
+            st.session_state['input_nominal'] = 20000
+        else:
+            st.session_state['input_nominal'] = 0
         
         # Jeda sedetik biar user liat pesan suksesnya
         import time
