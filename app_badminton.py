@@ -28,27 +28,8 @@ if 'sudah_login' not in st.session_state:
     st.session_state['sudah_login'] = False
     st.session_state['user_role'] = ""
 
-# --- LOGIKA MEMBERSIHKAN FORM (VERSI BARU) ---
-if 'bersihkan_form' not in st.session_state:
-    st.session_state['bersihkan_form'] = False
-
-if st.session_state['bersihkan_form']:
-    st.session_state["input_member"] = ""
-    if st.session_state['user_role'] == "Member":
-        st.session_state["input_nominal"] = 20000 # Member otomatis 20rb
-    else:
-        st.session_state["input_nominal"] = 0     # Admin mulai dari 0
-    # ---------------------------
-    
-    st.session_state["input_ket"] = ""
-    st.session_state['bersihkan_form'] = False
-
-# --- FUNGSI MEMBERSIHKAN FORM ---
-def clear_form():
-    st.session_state["input_member"] = ""
-    st.session_state["input_nominal"] = 0
-    st.session_state["input_ket"] = ""
-    # Tanggal, Jenis, dan Kategori biasanya tidak perlu di-reset
+# --- LOGIKA MEMBERSIHKAN FORM (DIHAPUS - DIGANTI ST.FORM) ---
+# Kita hapus logika manual state karena st.form(clear_on_submit=True) lebih efisien.
 
 # 2. Fungsi Form Login
 def login_form():
@@ -58,13 +39,13 @@ def login_form():
     
     if st.button("Masuk"):
         # Cek User Admin
-        if username == "Fikri" and password == "haha":
+        if username == st.secrets["auth_admin"]["username"] and password == st.secrets["auth_admin"]["password"]:
             st.session_state['sudah_login'] = True
             st.session_state['user_role'] = "Admin"
             st.rerun() # Refresh halaman otomatis
             
         # Cek User Member
-        elif username == "Member" and password == "abcd":
+        elif username == st.secrets["auth_member"]["username"] and password == st.secrets["auth_member"]["password"]:
             st.session_state['sudah_login'] = True
             st.session_state['user_role'] = "Member"
             st.rerun()
@@ -116,72 +97,66 @@ if menu == "Input Data":
 
     df = load_data()
 
-    def salin_nama():
-        # Ambil isi Nama Member, masukkan ke Keterangan
-        st.session_state['input_ket'] = st.session_state['input_member']
-
-    # Bikin Formulir
-    
-    col1, col2 = st.columns(2) # Bagi layar jadi 2 kolom
-    
-    with col1:
-        tanggal = st.date_input("Tanggal", datetime.now())
-        member = st.text_input("Nama Member (Khusus Pemasukan)",key="input_member", on_change=salin_nama)
-    
-    with col2:
-        # 1. Pilih Jenis (Pemasukan/Pengeluaran)
-        if st.session_state['user_role'] == "Admin":
-            opsi_jenis = ["Pemasukan", "Pengeluaran"]
-        else:
-            opsi_jenis = ["Pemasukan"]
+    # Bikin Formulir dengan st.form
+    with st.form("form_input", clear_on_submit=True):
+        col1, col2 = st.columns(2) # Bagi layar jadi 2 kolom
+        
+        with col1:
+            tanggal = st.date_input("Tanggal", datetime.now())
+            # Hapus on_change karena tidak jalan di dalam form sebelum submit
+            member = st.text_input("Nama Member (Khusus Pemasukan)", key="input_member")
+        
+        with col2:
+            # 1. Pilih Jenis (Pemasukan/Pengeluaran)
+            if st.session_state['user_role'] == "Admin":
+                opsi_jenis = ["Pemasukan", "Pengeluaran"]
+            else:
+                opsi_jenis = ["Pemasukan"]
+                
+            jenis = st.selectbox("Jenis", opsi_jenis)
             
-        jenis = st.selectbox("Jenis", opsi_jenis)
-        
-        # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
-        if jenis == "Pemasukan":
-            opsi_kategori = ["Iuran"]
-        else:
-            opsi_kategori = ["Lapangan", "Kock"]
-        
-        kategori = st.selectbox("Kategori", opsi_kategori)
+            # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
+            if jenis == "Pemasukan":
+                opsi_kategori = ["Iuran"]
+            else:
+                opsi_kategori = ["Lapangan", "Kock"]
+            
+            kategori = st.selectbox("Kategori", opsi_kategori)
 
-        # 3. Input Nominal (Logika Pintar V1.0)
-        if st.session_state['user_role'] == "Member":
-            angka_bawaan = 20000
-        else:
-            angka_bawaan = 0
+            # 3. Input Nominal
+            if st.session_state['user_role'] == "Member":
+                angka_bawaan = 20000
+            else:
+                angka_bawaan = 0
 
-        # Cek ingatan, kalau kosong kita isi paksa
-        if "input_nominal" not in st.session_state:
-            st.session_state["input_nominal"] = angka_bawaan
+            # nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, value=angka_bawaan, key="input_nominal")
+            # Note: value=angka_bawaan mungkin tidak reset sempurna dengan clear_on_submit jika statik, tapi kita coba standar.
+            nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, key="input_nominal")
+            
+            # ... (lanjut ke keterangan) ...
+            ket = st.text_area("Keterangan Tambahan", key="input_ket")
 
-        nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, key="input_nominal")
-        
-        # ... (lanjut ke keterangan) ...
-        ket = st.text_area("Keterangan Tambahan", key="input_ket")
-
-        # Tombol Submit
-        tombol_simpan = st.button("Simpan Data")
+        # Tombol Submit di dalam form
+        tombol_simpan = st.form_submit_button("Simpan Data")
 
         if tombol_simpan:
-            # --- LOGIKA BARU: KIRIM KE GOOGLE SHEETS ---
+            # --- LOGIKA BARU: Validasi & Auto-Fill ---
             
-            # 1. Ubah Tanggal jadi Teks (biar Google gak bingung)
+            # Auto-fill Keterangan jika kosong (pengganti on_change)
+            if not ket and member:
+                ket = member
+
+            # 1. Ubah Tanggal jadi Teks
             tanggal_str = str(tanggal)
 
-            # 2. Susun data dalam satu baris (Urutan harus sama dengan kolom di Google Sheet!)
+            # 2. Susun data
             baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
 
             # 3. Kirim ke Awan ☁️
             sheet.append_row(baris_baru)
             
             st.success("✅ Berhasil simpan ke Google Drive!")
-            
-            # 4. Angkat bendera untuk bersih-bersih form
-            st.session_state['bersihkan_form'] = True
-            
-            # 5. Refresh
-            st.rerun()
+            # Tidak perlu st.rerun(), form otomatis clear karena clear_on_submit=True
 
             # === MENU 2: LAPORAN KAS ===
 elif menu == "Laporan Kas":
@@ -258,6 +233,23 @@ elif menu == "Laporan Kas":
     else:
         # Else ini sejajar dengan if not df.empty di atas
         st.info("Belum ada data laporan.")
+    
+    # --- FITUR GRAFIK (BARU) ---
+    if not df.empty:
+        st.markdown("### 📈 Grafik Tren Kas")
+        
+        # Kita olah datanya biar bisa digrafikkan
+        # Group by Tanggal dan Jenis, jumlahkan Nominal
+        # Hasilnya: Index=Tanggal, Kolom=Pemasukan/Pengeluaran
+        try:
+            df_chart = df.groupby(['Tanggal', 'Jenis'])['Nominal'].sum().unstack().fillna(0)
+            
+            # Sortir tanggal biar urut
+            df_chart = df_chart.sort_index()
+            
+            st.line_chart(df_chart)
+        except Exception as e:
+            st.warning(f"Gagal memuat grafik: {e}")
 
         # === MENU 3: HAPUS DATA ===
 elif menu == "Hapus Data":
@@ -275,6 +267,11 @@ elif menu == "Hapus Data":
     if not df.empty:
         # Pilihan nomor index
         nomor_hapus = st.selectbox("Pilih Nomor Baris (Index) yang mau dihapus:", df.index)
+        
+        # --- PREVIEW DATA YANG AKAN DIHAPUS ---
+        if nomor_hapus in df.index:
+            data_hapus = df.loc[nomor_hapus]
+            st.warning(f"⚠️ Anda akan menghapus data: **{data_hapus['Tanggal']}** - **{data_hapus['Keterangan']}** (Rp {data_hapus['Nominal']})")
         
         # Tombol Eksekusi
         if st.button("🗑️ Hapus Permanen"):
