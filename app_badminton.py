@@ -102,16 +102,62 @@ if menu == "Input Data":
     # Bikin Formulir (TANPA st.form agar interaktif)
     # with st.form("form_input", clear_on_submit=True): <--- HAPUS
     
+    # --- FUNGSI CALLBACK SIMPAN DATA ---
+    def proses_simpan():
+        # Ambil data dari state
+        tanggal = st.session_state['input_tanggal']
+        member = st.session_state['input_member']
+        jenis = st.session_state['jenis_transaksi']
+        kategori = st.session_state['input_kategori']
+        nominal = st.session_state['input_nominal']
+        ket = st.session_state['input_ket']
+        
+        # Validasi/Auto-fill
+        if not ket and member:
+            ket = member
+            
+        try:
+            # Ubah Tanggal jadi Teks
+            tanggal_str = str(tanggal)
+            
+            # Susun data
+            baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
+            
+            # Kirim ke Awan
+            sheet.append_row(baris_baru)
+            st.session_state['notifikasi'] = "sukses"
+            
+            # --- RESET FORM (AMAN DI SINI) ---
+            st.session_state['input_member'] = ""
+            st.session_state['input_ket'] = ""
+            
+            if st.session_state.get('user_role') == "Member":
+                st.session_state['input_nominal'] = 20000
+            else:
+                st.session_state['input_nominal'] = 0
+                
+        except Exception as e:
+            st.session_state['notifikasi'] = f"error: {str(e)}"
+
+    # Tampilkan Notifikasi jika ada
+    if 'notifikasi' in st.session_state:
+        if st.session_state['notifikasi'] == "sukses":
+            st.success("✅ Berhasil simpan ke Google Drive!")
+        elif st.session_state['notifikasi'].startswith("error"):
+            st.error(f"Gagal: {st.session_state['notifikasi']}")
+        # Hapus notifikasi agar tidak muncul terus saat refresh selanjutnya (opsional/biar bersih)
+        del st.session_state['notifikasi']
+
     col1, col2 = st.columns(2) # Bagi layar jadi 2 kolom
     
     with col1:
-        tanggal = st.date_input("Tanggal", datetime.now())
+        # Tambah key="input_tanggal"
+        tanggal = st.date_input("Tanggal", datetime.now(), key="input_tanggal")
         # Hapus on_change karena tidak jalan di dalam form sebelum submit
         member = st.text_input("Nama Member (Khusus Pemasukan)", key="input_member")
     
     with col2:
         # 1. Pilih Jenis (Pemasukan/Pengeluaran)
-        # Pastikan logika ini dijalankan setiap kali render
         current_role = st.session_state.get('user_role')
         
         if current_role == "Admin":
@@ -121,14 +167,14 @@ if menu == "Input Data":
             
         jenis = st.selectbox("Jenis", opsi_jenis, key="jenis_transaksi")
         
-        # 2. Tentukan Kategori (JANGAN SAMPAI HILANG)
+        # 2. Tentukan Kategori
         if jenis == "Pemasukan":
             opsi_kategori = ["Iuran"]
         else:
-            # Karena sudah tidak pakai st.form, blok ini akan jalan realtime saat jenis berubah!
             opsi_kategori = ["Lapangan", "Kock"]
         
-        kategori = st.selectbox("Kategori", opsi_kategori)
+        # Tambah key="input_kategori"
+        kategori = st.selectbox("Kategori", opsi_kategori, key="input_kategori")
 
         # 3. Input Nominal
         if st.session_state['user_role'] == "Member":
@@ -137,49 +183,16 @@ if menu == "Input Data":
             angka_bawaan = 0
 
         # nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, value=angka_bawaan, key="input_nominal")
-        # Note: value=angka_bawaan mungkin tidak reset sempurna dengan clear_on_submit jika statik, tapi kita coba standar.
+        # Untuk st.number_input, value default hanya diambil jika key belum ada di session state.
+        # Jadi aman untuk visual awal.
         nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, key="input_nominal")
         
         # ... (lanjut ke keterangan) ...
         ket = st.text_area("Keterangan Tambahan", key="input_ket")
 
-    # Tombol Submit (Biasa, bukan form_submit_button)
-    tombol_simpan = st.button("Simpan Data")
+    # Tombol Submit dengan Callback
+    st.button("Simpan Data", on_click=proses_simpan)
 
-    if tombol_simpan:
-        # --- LOGIKA BARU: Validasi & Auto-Fill ---
-        
-        # Auto-fill Keterangan jika kosong (pengganti on_change)
-        if not ket and member:
-            ket = member
-
-        # 1. Ubah Tanggal jadi Teks
-        tanggal_str = str(tanggal)
-
-        # 2. Susun data
-        baris_baru = [tanggal_str, member, jenis, kategori, nominal, ket]
-
-        # 3. Kirim ke Awan ☁️
-        sheet.append_row(baris_baru)
-        
-        st.success("✅ Berhasil simpan ke Google Drive!")
-        
-        # --- MANUAL RESET FORM ---
-        # Kita set nilai state secara eksplisit agar widget ter-reset
-        st.session_state['input_member'] = ""
-        st.session_state['input_ket'] = ""
-        
-        # Reset nominal kembali ke default (Misal: Member 20.000, Admin 0)
-        if st.session_state.get('user_role') == "Member":
-            st.session_state['input_nominal'] = 20000
-        else:
-            st.session_state['input_nominal'] = 0
-        
-        # Jeda sedetik biar user liat pesan suksesnya
-        import time
-        time.sleep(1.0) 
-        
-        st.rerun()
 
             # === MENU 2: LAPORAN KAS ===
 elif menu == "Laporan Kas":
