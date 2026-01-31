@@ -204,7 +204,13 @@ elif menu == "Laporan Kas":
     if not df.empty:
         # 1. Filter Tanggal
         daftar_tanggal = sorted(df['Tanggal'].unique().tolist(), reverse=True)
-        opsi_pilihan = ["Semua Waktu"] + daftar_tanggal
+        
+        # Logika Filter: Member hanya boleh lihat per-tanggal
+        if st.session_state.get('user_role') == "Admin":
+            opsi_pilihan = ["Semua Waktu"] + daftar_tanggal
+        else:
+            opsi_pilihan = daftar_tanggal
+            
         pilih_periode = st.selectbox("📅 Pilih Periode Laporan:", opsi_pilihan)
         
         # 2. Filter Data
