@@ -177,10 +177,12 @@ if menu == "Input Data":
         kategori = st.selectbox("Kategori", opsi_kategori, key="input_kategori")
 
         # 3. Input Nominal
-        if st.session_state['user_role'] == "Member":
-            angka_bawaan = 20000
-        else:
-            angka_bawaan = 0
+        # Logika Default Value (Hanya set jika belum ada di state)
+        if 'input_nominal' not in st.session_state:
+            if st.session_state.get('user_role') == "Member":
+                st.session_state['input_nominal'] = 20000
+            else:
+                st.session_state['input_nominal'] = 0
 
         # nominal = st.number_input("Nominal (Rp)", min_value=0, step=5000, value=angka_bawaan, key="input_nominal")
         # Untuk st.number_input, value default hanya diambil jika key belum ada di session state.
@@ -227,10 +229,18 @@ elif menu == "Laporan Kas":
         df_member = df_tampil[df_tampil['Nominal'] == 20000]
         jumlah_member = len(df_member)
     
-        # Hitung Duit
+        # Hitung Duit (Default dari data yang tampil)
         total_masuk = df_tampil[df_tampil['Jenis'] == 'Pemasukan']['Nominal'].sum()
         total_keluar = df_tampil[df_tampil['Jenis'] == 'Pengeluaran']['Nominal'].sum()
         sisa_kas = total_masuk - total_keluar
+        
+        # --- PERBAIKAN KHUSUS MEMBER: Tampilkan Kas Akumulasi ---
+        if st.session_state.get('user_role') == "Member":
+            # Hitung total dari seisi database, bukan cuma hari ini
+            total_masuk_all = df[df['Jenis'] == 'Pemasukan']['Nominal'].sum()
+            total_keluar_all = df[df['Jenis'] == 'Pengeluaran']['Nominal'].sum()
+            sisa_kas = total_masuk_all - total_keluar_all
+            judul_ket = "Sisa Kas (Total Akumulasi)"
         
         # --- LOGIKA WARNA TEKS (Pengeluaran = Merah) ---
         # (Perhatikan: def ini sekarang menjorok ke dalam, sejajar dengan filter di atas)
